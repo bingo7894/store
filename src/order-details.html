@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>รายละเอียดคำสั่งซื้อ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background-color: #f8f9fa;
+      }
+      .product-img {
+        width: 80px;
+        height: auto;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav
+      class="navbar navbar-expand-lg navbar-dark sticky-top"
+      style="background-color: #e67e22 !important"
+    >
+      <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center fw-bold" href="/home">
+          <img
+            src="https://www.se-ed.com/content/images/logo-seed.png"
+            alt="SE-ED"
+            width="45"
+            height="45"
+            class="me-2"
+          />
+          SE-ED
+        </a>
+      </div>
+    </nav>
+    <div class="container py-5">
+      <div class="mb-4">
+        <a href="/orders" class="btn btn-outline-secondary mb-3">
+          <i class="bi bi-arrow-left me-1"></i>กลับไปรายการสั่งซื้อ
+        </a>
+      </div>
+      <div id="orderDetailsContainer">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-3 text-muted">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+      const orderId = new URLSearchParams(window.location.search).get("id");
+      async function loadOrderDetails() {
+        const container = document.getElementById("orderDetailsContainer");
+        if (!orderId) {
+          container.innerHTML = `<div class="alert alert-danger">ไม่พบหมายเลขคำสั่งซื้อ</div>`;
+          return;
+        }
+        try {
+          const res = await axios.get("/api/orders", {
+            withCredentials: true,
+          });
+          const orders = res.data;
+          const order = orders.find((o) => o.order_id == orderId);
+          if (!order) {
+            container.innerHTML = `<div class="alert alert-warning">ไม่พบคำสั่งซื้อที่ระบุ</div>`;
+            return;
+          }
+          const statusConfig = {
+            paid: {
+              color: "success",
+              icon: "check-circle",
+              text: "ชำระเงินแล้ว",
+            },
+            shipped: { color: "info", icon: "truck", text: "จัดส่งแล้ว" },
+            pending: { color: "warning", icon: "clock", text: "รอดำเนินการ" },
+          };
+          const status = statusConfig[order.status] || {
+            color: "secondary",
+            icon: "question-circle",
+            text: order.status,
+          };
+          const orderDate = new Date(order.created_at).toLocaleDateString(
+            "th-TH",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          );
+          let html = `
+            <div class="card shadow-sm mb-4">
+              <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-receipt me-2"></i>คำสั่งซื้อ #${
+                  order.order_id
+                }</h4>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <p class="mb-2">
+                      <i class="bi bi-calendar3 text-muted me-2"></i>
+                      <strong>วันที่สั่งซื้อ:</strong> ${orderDate}
+                    </p>
+                    <p class="mb-2">
+                      <i class="bi bi-info-circle text-muted me-2"></i>
+                      <strong>สถานะ:</strong>
+                      <span class="badge bg-${status.color} ms-2">
+                        <i class="bi bi-${status.icon} me-1"></i>${status.text}
+                      </span>
+                    </p>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    ${
+                      order.tracking_number
+                        ? `<p class="mb-2">
+                            <i class="bi bi-truck text-muted me-2"></i>
+                            <strong>หมายเลขพัสดุ:</strong>
+                            <span class="badge bg-info">${order.tracking_number}</span>
+                           </p>`
+                        : '<p class="text-muted mb-2">ยังไม่มีหมายเลขพัสดุ</p>'
+                    }
+                    <p class="mb-2">
+                      <i class="bi bi-cash text-muted me-2"></i>
+                      <strong>ยอดรวมทั้งหมด:</strong>
+                      <span class="text-success fs-5 fw-bold ms-2">฿${parseFloat(
+                        order.total_amount
+                      ).toFixed(2)}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>ที่อยู่สำหรับจัดส่ง</h5>
+              </div>
+              <div class="card-body">
+                <p class="mb-1"><strong>ชื่อผู้รับ:</strong> ${
+                  order.recipient_name || "ไม่มีข้อมูล"
+                }</p>
+                <p class="mb-1"><strong>ที่อยู่:</strong> ${
+                  order.shipping_address || "ไม่มีข้อมูล"
+                }</p>
+                <p class="mb-0"><strong>เบอร์โทรศัพท์:</strong> ${
+                  order.recipient_phone || "ไม่มีข้อมูล"
+                }</p>
+              </div>
+            </div>
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-bag-check me-2"></i>รายการสินค้า</h5>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>สินค้า</th>
+                        <th>ชื่อสินค้า</th>
+                        <th class="text-center">จำนวน</th>
+                        <th class="text-end">ราคา/ชิ้น</th>
+                        <th class="text-end">ราคารวม</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+          `;
+          order.items.forEach((item) => {
+            const itemTotal = parseFloat(item.price) * item.quantity;
+            html += `
+              <tr>
+                <td>
+                  <img src="${item.image_url}"
+                       class="product-img"
+                       alt="${item.name}"
+                       onerror="this.src='https://via.placeholder.com/80x120?text=No+Image';">
+                </td>
+                <td>${item.name}</td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">${item.quantity}</span>
+                </td>
+                <td class="text-end">฿${parseFloat(item.price).toFixed(2)}</td>
+                <td class="text-end fw-bold">฿${itemTotal.toFixed(2)}</td>
+              </tr>
+            `;
+          });
+          html += `
+                    </tbody>
+                    <tfoot class="table-light">
+                      <tr>
+                        <td colspan="4" class="text-end fw-bold">ยอดรวมทั้งหมด:</td>
+                        <td class="text-end fw-bold text-success fs-5">
+                          ฿${parseFloat(order.total_amount).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+          container.innerHTML = html;
+        } catch (err) {
+          console.error(err);
+          container.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้
+            </div>
+          `;
+        }
+      }
+      document.addEventListener("DOMContentLoaded", loadOrderDetails);
+    </script>
+  </body>
+</html>

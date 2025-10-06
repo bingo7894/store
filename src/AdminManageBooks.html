@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Manage Books</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background-color: #f8f9fa;
+      }
+      .book-cover-sm {
+        width: 50px;
+        height: auto;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/home">Admin Panel - SE-ED</a>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <main id="admin-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2>จัดการหนังสือ</h2>
+          <div>
+            <a href="/admin/check-paid" class="btn btn-success me-2">
+              <i class="bi bi-cash-stack me-1"></i> จัดการคำสั่งซื้อ
+            </a>
+            <a href="/admin/create-book" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i> เพิ่มหนังสือใหม่
+            </a>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>ปก</th>
+                    <th>ชื่อหนังสือ</th>
+                    <th>ผู้แต่ง</th>
+                    <th>ราคา</th>
+                    <th>คลัง</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="book-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div id="access-denied" class="text-center mt-5 d-none">
+        <h1 class="display-1">🚫</h1>
+        <h2>Access Denied</h2>
+        <p class="lead">
+          คุณไม่มีสิทธิ์เข้าถึงหน้านี้ เฉพาะผู้ดูแลระบบเท่านั้น
+        </p>
+        <a href="/home" class="btn btn-secondary mt-3">กลับหน้าหลัก</a>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+      const adminContent = document.getElementById("admin-content");
+      const accessDenied = document.getElementById("access-denied");
+      const bookTableBody = document.getElementById("book-table-body");
+
+      // 1. ตรวจสอบสิทธิ์ Admin
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          const res = await axios.get("http://localhost:8000/api/users/me", {
+            withCredentials: true,
+          });
+          if (res.data.role !== "admin") throw new Error("Not an admin");
+
+          // ถ้าเป็น Admin ให้โหลดข้อมูลหนังสือ
+          loadBooks();
+        } catch (err) {
+          adminContent.classList.add("d-none");
+          accessDenied.classList.remove("d-none");
+        }
+      });
+
+      // 2. โหลดและแสดงผลข้อมูลหนังสือ
+      async function loadBooks() {
+        try {
+          const res = await axios.get("http://localhost:8000/api/products", {
+            withCredentials: true,
+          });
+          const books = res.data;
+          bookTableBody.innerHTML = ""; // Clear table
+
+          if (books.length === 0) {
+            bookTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">ไม่พบข้อมูลหนังสือ</td></tr>`;
+            return;
+          }
+
+          books.forEach((book) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                        <td>${book.id}</td>
+                        <td><img src="${book.image_url}" alt="${
+              book.name
+            }" class="book-cover-sm rounded"></td>
+                        <td>${book.name}</td>
+                        <td>${book.author || "-"}</td>
+                        <td>฿${book.price}</td>
+                        <td>${book.stock}</td>
+                        <td>
+                            <a href="/admin/edit-book?id=${
+                              book.id
+                            }" class="btn btn-sm btn-warning me-1" title="แก้ไข"><i class="bi bi-pencil-square"></i></a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteBook(${
+                              book.id
+                            })" title="ลบ"><i class="bi bi-trash"></i></button>
+                        </td>
+                    `;
+            bookTableBody.appendChild(row);
+          });
+        } catch (err) {
+          console.error(err);
+          bookTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+        }
+      }
+
+      // 3. ฟังก์ชันสำหรับลบหนังสือ
+      async function deleteBook(id) {
+        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบหนังสือ ID: ${id}?`)) {
+          return;
+        }
+        try {
+          await axios.delete(`http://localhost:8000/api/products/${id}`, {
+            withCredentials: true,
+          });
+          alert("ลบหนังสือสำเร็จ");
+          loadBooks(); // โหลดข้อมูลใหม่
+        } catch (err) {
+          console.error(err);
+          alert("เกิดข้อผิดพลาดในการลบหนังสือ");
+        }
+      }
+    </script>
+  </body>
+</html>

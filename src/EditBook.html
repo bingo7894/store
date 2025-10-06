@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Edit Book</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background-color: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/admin/books">Admin Panel - SE-ED</a>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <main id="admin-content">
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="card shadow-sm">
+              <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">แก้ไขหนังสือ</h2>
+                <form id="editBookForm">
+                  <div class="mb-3">
+                    <label for="name" class="form-label">ชื่อหนังสือ</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="name"
+                      required
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="author" class="form-label">ผู้แต่ง</label>
+                    <input type="text" class="form-control" id="author" />
+                  </div>
+                  <div class="mb-3">
+                    <label for="description" class="form-label">คำอธิบาย</label>
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      rows="3"
+                    ></textarea>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="price" class="form-label">ราคาขาย</label
+                      ><input
+                        type="number"
+                        step="0.01"
+                        class="form-control"
+                        id="price"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="old_price" class="form-label"
+                        >ราคาปกติ (ถ้ามี)</label
+                      ><input
+                        type="number"
+                        step="0.01"
+                        class="form-control"
+                        id="old_price"
+                      />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="stock" class="form-label">จำนวนในคลัง</label
+                      ><input type="number" class="form-control" id="stock" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="type" class="form-label">ประเภท</label
+                      ><select class="form-select" id="type">
+                        <option value="หนังสือเล่ม">หนังสือเล่ม</option>
+                        <option value="E-Book">E-Book</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="image_url" class="form-label"
+                      >ลิงก์รูปภาพปก</label
+                    >
+                    <input
+                      type="url"
+                      class="form-control"
+                      id="image_url"
+                      required
+                    />
+                  </div>
+
+                  <div id="feedback" class="mt-3"></div>
+                  <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">
+                      บันทึกการเปลี่ยนแปลง
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+      const form = document.getElementById("editBookForm");
+      const feedbackDiv = document.getElementById("feedback");
+      const bookId = new URLSearchParams(window.location.search).get("id");
+
+      // 1. โหลดข้อมูลหนังสือเดิมมาใส่ในฟอร์ม
+      document.addEventListener("DOMContentLoaded", async () => {
+        if (!bookId) {
+          alert("ไม่พบ ID ของหนังสือ");
+          window.location.href = "/admin/books";
+          return;
+        }
+        try {
+          const res = await axios.get(
+            `http://localhost:8000/api/products/${bookId}`,
+            { withCredentials: true }
+          );
+          const book = res.data;
+
+          // นำข้อมูลไปใส่ในฟอร์ม
+          document.getElementById("name").value = book.name;
+          document.getElementById("author").value = book.author;
+          document.getElementById("description").value = book.description;
+          document.getElementById("price").value = book.price;
+          document.getElementById("old_price").value = book.old_price;
+          document.getElementById("stock").value = book.stock;
+          document.getElementById("type").value = book.type;
+          document.getElementById("image_url").value = book.image_url;
+        } catch (err) {
+          console.error(err);
+          alert("ไม่สามารถโหลดข้อมูลหนังสือได้");
+          window.location.href = "/admin/books";
+        }
+      });
+
+      // 2. จัดการการ submit ฟอร์มเพื่ออัปเดตข้อมูล
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const updatedData = {
+          name: document.getElementById("name").value,
+          author: document.getElementById("author").value,
+          description: document.getElementById("description").value,
+          price: parseFloat(document.getElementById("price").value),
+          old_price:
+            parseFloat(document.getElementById("old_price").value) || null,
+          stock: parseInt(document.getElementById("stock").value),
+          type: document.getElementById("type").value,
+          image_url: document.getElementById("image_url").value,
+        };
+
+        try {
+          await axios.put(
+            `http://localhost:8000/api/admin/products/${bookId}`,
+            updatedData,
+            { withCredentials: true }
+          );
+          feedbackDiv.innerHTML = `<div class="alert alert-success">อัปเดตข้อมูลสำเร็จ! กำลังกลับไปหน้าจัดการ...</div>`;
+          setTimeout(() => {
+            window.location.href = "/admin/books";
+          }, 2000);
+        } catch (err) {
+          const message =
+            err.response?.data?.message || "เกิดข้อผิดพลาดในการอัปเดต";
+          feedbackDiv.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+        }
+      });
+    </script>
+  </body>
+</html>

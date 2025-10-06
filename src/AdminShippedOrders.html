@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - คำสั่งซื้อที่จัดส่งแล้ว</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <style>
+      .tracking-input {
+        border: none;
+        background-color: transparent;
+        font-weight: bold;
+        padding: 0;
+        width: 100%;
+      }
+      .tracking-input:disabled {
+        color: #198754; /* สีเขียวสำหรับสถานะจัดส่งแล้ว */
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container my-5">
+      <h1 class="mb-4 text-primary border-bottom pb-2">
+        รายการคำสั่งซื้อที่จัดส่งแล้ว 🚚
+      </h1>
+      <p class="text-muted">
+        รายการคำสั่งซื้อที่ได้รับการจัดส่งแล้ว
+        <a
+          href="/admin/check-paid"
+          class="btn btn-sm btn-outline-secondary ms-3"
+        >
+          <i class="bi bi-arrow-left"></i> Paid Orders
+        </a>
+      </p>
+
+      <div id="loadingMessage" class="alert alert-info" role="alert">
+        <span
+          class="spinner-border spinner-border-sm me-2"
+          aria-hidden="true"
+        ></span>
+        กำลังโหลดรายการคำสั่งซื้อ...
+      </div>
+      <div
+        id="errorMessage"
+        class="alert alert-danger"
+        style="display: none"
+      ></div>
+
+      <div class="table-responsive">
+        <table
+          id="shippedOrdersTable"
+          class="table table-striped table-hover align-middle"
+        >
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>อีเมลลูกค้า</th>
+              <th>ยอดรวม</th>
+              <th>วันที่สั่งซื้อ</th>
+              <th>รหัสพัสดุ</th>
+              <th>สถานะ</th>
+              <th>การดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <p
+        id="noOrders"
+        class="text-center text-secondary my-4"
+        style="display: none"
+      >
+        <i class="bi bi-check-circle me-2"></i>
+        ยังไม่มีคำสั่งซื้อที่อยู่ในสถานะจัดส่งแล้ว
+      </p>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const ordersTableBody = document.querySelector(
+        "#shippedOrdersTable tbody"
+      );
+      const loadingMessage = document.getElementById("loadingMessage");
+      const errorMessage = document.getElementById("errorMessage");
+      const noOrdersMessage = document.getElementById("noOrders");
+
+      // ฟังก์ชันสำหรับอัปเดต Tracking Number (ใช้ API ที่แก้ไขแล้ว)
+      async function updateTrackingNumber(orderId, trackingNumber) {
+        try {
+          // *** แก้ไข URL ตรงนี้ ***
+          const updateRes = await fetch(
+            `/api/admin/orders/${orderId}/tracking`, // <--- แก้จาก order เป็น orders
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ trackingNumber }),
+            }
+          );
+
+          if (!updateRes.ok) {
+            const data = await updateRes.json();
+            throw new Error(data.message || "Update failed");
+          }
+
+          alert(`รหัสพัสดุสำหรับ Order #${orderId} อัปเดตเรียบร้อย!`);
+        } catch (err) {
+          console.error("API Update Error:", err);
+          alert("Failed to update tracking number: " + err.message);
+          throw err; // Re-throw error to revert changes on UI
+        }
+      }
+
+      function renderOrders(orders) {
+        ordersTableBody.innerHTML = "";
+
+        if (orders.length === 0) {
+          noOrdersMessage.style.display = "block";
+          return;
+        }
+
+        orders.forEach((order) => {
+          const initialTracking = order.tracking_number || "";
+          const row = ordersTableBody.insertRow();
+
+          row.innerHTML = `
+                      <td><span class="fw-bold text-primary">#${
+                        order.order_id
+                      }</span></td>
+                      <td>${order.user_email}</td>
+                      <td>${Number(order.total_amount).toFixed(2)} บาท</td>
+                      <td>${new Date(order.created_at).toLocaleDateString(
+                        "th-TH",
+                        { year: "numeric", month: "short", day: "numeric" }
+                      )}</td>
+                      <td>
+                          <input type="text" class="form-control form-control-sm tracking-input text-success" value="${initialTracking}" disabled data-initial-value="${initialTracking}">
+                      </td>
+                      <td><span class="badge bg-primary text-uppercase">${
+                        order.status
+                      }</span></td>
+                      <td>
+                          <div class="action-buttons">
+                              <button class="btn btn-sm btn-warning edit-btn"><i class="bi bi-pencil-fill"></i> แก้ไข</button>
+                              <button class="btn btn-sm btn-success save-btn" style="display:none;"><i class="bi bi-save-fill"></i> บันทึก</button>
+                              <button class="btn btn-sm btn-danger cancel-btn" style="display:none;"><i class="bi bi-x-circle-fill"></i> ยกเลิก</button>
+                          </div>
+                      </td>
+                  `;
+
+          const input = row.querySelector(".tracking-input");
+          const editBtn = row.querySelector(".edit-btn");
+          const saveBtn = row.querySelector(".save-btn");
+          const cancelBtn = row.querySelector(".cancel-btn");
+
+          // --- Event Listeners ---
+
+          // 1. Edit Mode
+          editBtn.addEventListener("click", () => {
+            input.disabled = false;
+            input.focus();
+            editBtn.style.display = "none";
+            saveBtn.style.display = "inline-block";
+            cancelBtn.style.display = "inline-block";
+            input.classList.add("border", "border-warning");
+            input.classList.remove("text-success");
+          });
+
+          // 2. Cancel Mode
+          cancelBtn.addEventListener("click", () => {
+            input.value = input.dataset.initialValue;
+            input.disabled = true;
+            editBtn.style.display = "inline-block";
+            saveBtn.style.display = "none";
+            cancelBtn.style.display = "none";
+            input.classList.remove("border", "border-warning");
+            input.classList.add("text-success");
+          });
+
+          // 3. Save Mode
+          saveBtn.addEventListener("click", async () => {
+            const newTrackingNumber = input.value.trim();
+
+            if (!newTrackingNumber) {
+              alert("โปรดกรอกรหัสพัสดุ");
+              return;
+            }
+
+            if (newTrackingNumber === input.dataset.initialValue) {
+              alert("ไม่มีการเปลี่ยนแปลงรหัสพัสดุ");
+              cancelBtn.click();
+              return;
+            }
+
+            try {
+              await updateTrackingNumber(order.order_id, newTrackingNumber);
+              input.dataset.initialValue = newTrackingNumber;
+              cancelBtn.click();
+            } catch (e) {
+              // Error handling is inside updateTrackingNumber
+            }
+          });
+
+          // 4. Enter key in input field
+          input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && !input.disabled) {
+              saveBtn.click();
+            }
+          });
+        });
+      }
+
+      async function loadShippedOrders() {
+        loadingMessage.style.display = "block";
+        errorMessage.style.display = "none";
+        ordersTableBody.innerHTML = "";
+        noOrdersMessage.style.display = "none";
+
+        try {
+          const response = await fetch("/api/admin/shipped-orders", {
+            credentials: "include",
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            throw new Error("Authorization failed. Please log in as Admin.");
+          }
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const orders = await response.json();
+          loadingMessage.style.display = "none";
+
+          renderOrders(orders);
+        } catch (error) {
+          console.error("Error fetching shipped orders:", error);
+          loadingMessage.style.display = "none";
+          errorMessage.textContent = `เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ: ${error.message}`;
+          errorMessage.style.display = "block";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadShippedOrders);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Detail - SE-ED Bookstore</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background-color: #f8f9fa;
+      }
+      .product-image {
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
+        border-radius: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav
+      class="navbar navbar-expand-lg navbar-dark sticky-top"
+      style="background-color: #e67e22 !important"
+    >
+      <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center fw-bold" href="/home">
+          <img
+            src="https://www.se-ed.com/content/images/logo-seed.png"
+            alt="SE-ED"
+            width="45"
+            height="45"
+            class="me-2"
+          />
+          SE-ED
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarMain"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+          <form class="mx-auto my-3 my-lg-0 col-lg-5 d-flex" role="search">
+            <input
+              class="form-control me-2"
+              type="search"
+              placeholder="ค้นหาหนังสือ ผู้แต่ง หรือสำนักพิมพ์..."
+            />
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-search"></i>
+            </button>
+          </form>
+
+          <ul class="navbar-nav ms-auto align-items-lg-center">
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="bi bi-grid"></i> หมวดหมู่
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#"
+                    ><i class="bi bi-book me-2"></i>หนังสือทั่วไป</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#"
+                    ><i class="bi bi-mortarboard me-2"></i>หนังสือเรียน</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#"
+                    ><i class="bi bi-journal-text me-2"></i>นิยาย</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#"
+                    ><i class="bi bi-palette me-2"></i>อุปกรณ์สำนักงาน</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item d-none" id="wishlist-link">
+              <a class="nav-link" href="#"
+                ><i class="bi bi-heart"></i> รายการโปรด</a
+              >
+            </li>
+            <li class="nav-item position-relative d-none" id="cart-link">
+              <a
+                class="nav-link"
+                href="#"
+                data-bs-toggle="modal"
+                data-bs-target="#cartModal"
+                onclick="loadCartItems()"
+              >
+                <i class="bi bi-bag"></i> ตะกร้า
+                <span
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                  id="cart-count-badge"
+                  >0</span
+                >
+              </a>
+            </li>
+            <li class="nav-item ms-lg-2" id="auth-container">
+              <a class="btn btn-light" href="/index.html"
+                ><i class="bi bi-person"></i> เข้าสู่ระบบ</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid px-4">
+        <div class="navbar-nav flex-row flex-wrap justify-content-center w-100">
+          <a class="nav-link text-white fw-semibold px-3" href="#">ขายดี</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">มาใหม่</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">โปรโมชั่น</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">นิยาย</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">การศึกษา</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#"
+            >เด็กและเยาวชน</a
+          >
+          <a class="nav-link text-white fw-semibold px-3" href="#">ธุรกิจ</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">ศิลปะ</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">อาหาร</a>
+          <a class="nav-link text-white fw-semibold px-3" href="#">อุปกรณ์</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container my-5">
+      <div id="product-detail-container" class="row">
+        <div class="col-12 text-center">
+          <div
+            class="spinner-border text-primary"
+            style="width: 3rem; height: 3rem"
+            role="status"
+          >
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+      const productId = new URLSearchParams(window.location.search).get("id");
+      const container = document.getElementById("product-detail-container");
+
+      async function initializePage() {
+        if (!productId) {
+          container.innerHTML = `<div class="alert alert-danger">ไม่พบรหัสสินค้า</div>`;
+          return;
+        }
+
+        let isLoggedIn = false;
+        try {
+          await axios.get("http://localhost:8000/api/users/me", {
+            withCredentials: true,
+          });
+          isLoggedIn = true;
+        } catch (err) {
+          isLoggedIn = false;
+        }
+
+        try {
+          const res = await axios.get(
+            `http://localhost:8000/api/products/${productId}`
+          );
+          renderProduct(res.data, isLoggedIn);
+        } catch (err) {
+          console.error("Failed to load product", err);
+          container.innerHTML = `<div class="alert alert-danger text-center">ไม่พบสินค้าที่คุณค้นหา หรืออาจถูกลบไปแล้ว</div>`;
+        }
+      }
+
+      function renderProduct(p, isLoggedIn) {
+        const cartControlsHtml = isLoggedIn
+          ? `
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group" style="max-width: 150px;">
+                        <span class="input-group-text">จำนวน</span>
+                        <input type="number" class="form-control" id="quantity" value="1" min="1">
+                    </div>
+                    <button class="btn btn-primary btn-lg flex-grow-1" onclick="addToCart(${
+                      p.id
+                    }, '${p.name.replace(/'/g, "\\'")}')">
+                        <i class="bi bi-cart-plus me-1"></i> เพิ่มลงตะกร้า
+                    </button>
+                </div>
+                `
+          : `<a href="/index.html" class="btn btn-outline-secondary btn-lg w-100">เข้าสู่ระบบเพื่อสั่งซื้อ</a>`;
+
+        container.innerHTML = `
+                <div class="col-md-5 col-lg-4 text-center">
+                    <img src="${
+                      p.image_url
+                    }" class="product-image shadow-sm" alt="${
+          p.name
+        }" onerror="this.onerror=null;this.src='https://via.placeholder.com/400x600?text=No+Image';">
+                </div>
+                <div class="col-md-7 col-lg-8">
+                    <h1 class="display-5 fw-bold">${p.name}</h1>
+                    <p class="lead text-muted">โดย ${p.author || "ไม่ระบุ"}</p>
+                    <hr>
+                    <div class="d-flex align-items-baseline mb-3">
+                        <span class="display-4 text-danger fw-bold me-3">฿${
+                          p.price
+                        }</span>
+                        ${
+                          p.old_price
+                            ? `<span class="fs-4 text-muted text-decoration-line-through">฿${p.old_price}</span>`
+                            : ""
+                        }
+                    </div>
+                    <div class="mb-4">
+                        <span class="badge bg-success">มีสินค้า</span>
+                        <span class="ms-2 text-muted">(${
+                          p.stock || 0
+                        } ชิ้นในคลัง)</span>
+                    </div>
+                    <div class="mb-4">
+                        ${cartControlsHtml}
+                    </div>
+                    <h5>รายละเอียดสินค้า</h5>
+                    <p>${p.description || "ไม่มีคำอธิบาย"}</p>
+                </div>
+            `;
+      }
+
+      async function addToCart(productId, productName) {
+        const quantity =
+          parseInt(document.getElementById("quantity").value) || 1;
+        try {
+          await axios.post(
+            "http://localhost:8000/api/cart",
+            { productId, quantity },
+            { withCredentials: true }
+          );
+          alert(
+            `เพิ่ม "${productName}" จำนวน ${quantity} ชิ้น ลงตะกร้าสำเร็จ!`
+          );
+        } catch (err) {
+          console.error("Add to cart error:", err);
+          alert("เกิดข้อผิดพลาด: ไม่สามารถเพิ่มสินค้าลงตะกร้าได้");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initializePage);
+    </script>
+  </body>
+</html>
